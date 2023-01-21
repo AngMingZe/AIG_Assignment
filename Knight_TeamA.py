@@ -22,8 +22,6 @@ class Knight_TeamA(Character):
         self.melee_damage = 20
         self.melee_cooldown = 2.
 
-        self.level = 1
-
         seeking_state = KnightStateSeeking_TeamA(self)
         attacking_state = KnightStateAttacking_TeamA(self)
         ko_state = KnightStateKO_TeamA(self)
@@ -36,18 +34,18 @@ class Knight_TeamA(Character):
         
 
     def render(self, surface):
+
         Character.render(self, surface)
 
 
     def process(self, time_passed):
+        
         Character.process(self, time_passed)
-        level_up_stats = ["hp", "speed", "melee damage", "melee cooldown","healing cooldown","healing"]
-        #If below lvl 3, buff health, after that buff speed
+
+        level_up_stats = ["hp", "speed", "melee damage", "melee cooldown"]
         if self.can_level_up():
-            if(self.level <= 3):
-                self.level_up(level_up_stats[1])
-            else:
-                self.level_up(level_up_stats[2])
+            choice = randint(0, len(level_up_stats) - 1)
+            self.level_up(level_up_stats[choice])
 
    
 
@@ -58,7 +56,8 @@ class KnightStateSeeking_TeamA(State):
 
         State.__init__(self, "seeking")
         self.knight = knight
-        self.knight.path_graph = self.knight.world.paths[0] #Knight always goes top, 0 is top lane
+
+        self.knight.path_graph = self.knight.world.paths[randint(0, len(self.knight.world.paths)-1)]
 
 
     def do_actions(self):
