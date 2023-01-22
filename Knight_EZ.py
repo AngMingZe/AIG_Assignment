@@ -44,14 +44,16 @@ class Knight_EZ(Character):
     def process(self, time_passed):
         Character.process(self, time_passed)
         level_up_stats = ["hp", "speed", "melee damage", "melee cooldown","healing cooldown","healing"]
-        #If below lvl 3, buff health, after that buff speed
+        #If below lvl 3, buff health, after that buff healing
         if self.can_level_up():
             if(self.level <= 3):
-                self.level_up(level_up_stats[0])
+                self.level_up(level_up_stats[0]) #HP
             else:
-                self.level_up(level_up_stats[3])
-
-   
+                self.level_up(level_up_stats[5]) #Healing amt
+        
+        #Healing implementation
+        if(self.current_hp < 100):
+            self.heal()
 
 
 class KnightStateSeeking_EZ(State):
@@ -82,7 +84,6 @@ class KnightStateSeeking_EZ(State):
                     return "attacking"
         
         if (self.knight.position - self.knight.move_target.position).length() < 8:
-
             # continue on path
             if self.current_connection < self.path_length:
                 self.knight.move_target.position = self.path[self.current_connection].toNode.position
@@ -92,33 +93,25 @@ class KnightStateSeeking_EZ(State):
 
 
     def entry_actions(self):
-
         nearest_node = self.knight.path_graph.get_nearest_node(self.knight.position)
-
         self.path = pathFindAStar(self.knight.path_graph, \
                                   nearest_node, \
                                   self.knight.path_graph.nodes[self.knight.base.target_node_index])
 
-        
         self.path_length = len(self.path)
-
         if (self.path_length > 0):
             self.current_connection = 0
             self.knight.move_target.position = self.path[0].fromNode.position
-
         else:
             self.knight.move_target.position = self.knight.path_graph.nodes[self.knight.base.target_node_index].position
 
 
 class KnightStateAttacking_EZ(State):
-
     def __init__(self, knight):
 
         State.__init__(self, "attacking")
         self.knight = knight
-
     def do_actions(self):
-
         # colliding with target
         if pygame.sprite.collide_rect(self.knight, self.knight.target):
             self.knight.velocity = Vector2(0, 0)
@@ -130,32 +123,23 @@ class KnightStateAttacking_EZ(State):
                 self.knight.velocity.normalize_ip();
                 self.knight.velocity *= self.knight.maxSpeed
 
-
     def check_conditions(self):
-
         # target is gone
         if self.knight.world.get(self.knight.target.id) is None or self.knight.target.ko:
             self.knight.target = None
-            return "seeking"
-            
+            return "seeking"    
         return None
 
     def entry_actions(self):
-
         return None
 
-
 class KnightStateKO_EZ(State):
-
     def __init__(self, knight):
-
         State.__init__(self, "ko")
         self.knight = knight
 
     def do_actions(self):
-
         return None
-
 
     def check_conditions(self):
 
