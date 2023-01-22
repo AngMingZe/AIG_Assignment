@@ -1,3 +1,5 @@
+#THIS IS THE DRAFT/COMPLETE VERSION
+
 import pygame
 
 from random import randint, random
@@ -22,6 +24,8 @@ class Knight_EZ(Character):
         self.melee_damage = 20
         self.melee_cooldown = 2.
 
+        self.level = 1
+
         seeking_state = KnightStateSeeking_EZ(self)
         attacking_state = KnightStateAttacking_EZ(self)
         ko_state = KnightStateKO_EZ(self)
@@ -34,18 +38,18 @@ class Knight_EZ(Character):
         
 
     def render(self, surface):
-
         Character.render(self, surface)
 
 
     def process(self, time_passed):
-        
         Character.process(self, time_passed)
-
-        level_up_stats = ["hp", "speed", "melee damage", "melee cooldown"]
+        level_up_stats = ["hp", "speed", "melee damage", "melee cooldown","healing cooldown","healing"]
+        #If below lvl 3, buff health, after that buff speed
         if self.can_level_up():
-            choice = randint(0, len(level_up_stats) - 1)
-            self.level_up(level_up_stats[choice])
+            if(self.level <= 3):
+                self.level_up(level_up_stats[0])
+            else:
+                self.level_up(level_up_stats[3])
 
    
 
@@ -56,8 +60,7 @@ class KnightStateSeeking_EZ(State):
 
         State.__init__(self, "seeking")
         self.knight = knight
-
-        self.knight.path_graph = self.knight.world.paths[0]
+        self.knight.path_graph = self.knight.world.paths[1] #Knight always goes top, 0 is top lane
 
 
     def do_actions(self):
@@ -160,7 +163,7 @@ class KnightStateKO_EZ(State):
         if self.knight.current_respawn_time <= 0:
             self.knight.current_respawn_time = self.knight.respawn_time
             self.knight.ko = False
-            self.knight.path_graph = self.knight.world.paths[0]
+            self.knight.path_graph = self.knight.world.paths[1]
             return "seeking"
             
         return None

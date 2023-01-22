@@ -6,7 +6,7 @@ from Graph import *
 from Character import *
 from State import *
 
-class Knight_TeamA(Character):
+class Knight_EZ(Character):
 
     def __init__(self, world, image, base, position):
 
@@ -22,11 +22,9 @@ class Knight_TeamA(Character):
         self.melee_damage = 20
         self.melee_cooldown = 2.
 
-        self.level = 1
-
-        seeking_state = KnightStateSeeking_TeamA(self)
-        attacking_state = KnightStateAttacking_TeamA(self)
-        ko_state = KnightStateKO_TeamA(self)
+        seeking_state = KnightStateSeeking_EZ(self)
+        attacking_state = KnightStateAttacking_EZ(self)
+        ko_state = KnightStateKO_EZ(self)
 
         self.brain.add_state(seeking_state)
         self.brain.add_state(attacking_state)
@@ -36,29 +34,30 @@ class Knight_TeamA(Character):
         
 
     def render(self, surface):
+
         Character.render(self, surface)
 
 
     def process(self, time_passed):
+        
         Character.process(self, time_passed)
-        level_up_stats = ["hp", "speed", "melee damage", "melee cooldown","healing cooldown","healing"]
-        #If below lvl 3, buff health, after that buff speed
+
+        level_up_stats = ["hp", "speed", "melee damage", "melee cooldown"]
         if self.can_level_up():
-            if(self.level <= 3):
-                self.level_up(level_up_stats[1])
-            else:
-                self.level_up(level_up_stats[2])
+            choice = randint(0, len(level_up_stats) - 1)
+            self.level_up(level_up_stats[choice])
 
    
 
 
-class KnightStateSeeking_TeamA(State):
+class KnightStateSeeking_EZ(State):
 
     def __init__(self, knight):
 
         State.__init__(self, "seeking")
         self.knight = knight
-        self.knight.path_graph = self.knight.world.paths[0] #Knight always goes top, 0 is top lane
+
+        self.knight.path_graph = self.knight.world.paths[0]
 
 
     def do_actions(self):
@@ -108,7 +107,7 @@ class KnightStateSeeking_TeamA(State):
             self.knight.move_target.position = self.knight.path_graph.nodes[self.knight.base.target_node_index].position
 
 
-class KnightStateAttacking_TeamA(State):
+class KnightStateAttacking_EZ(State):
 
     def __init__(self, knight):
 
@@ -143,7 +142,7 @@ class KnightStateAttacking_TeamA(State):
         return None
 
 
-class KnightStateKO_TeamA(State):
+class KnightStateKO_EZ(State):
 
     def __init__(self, knight):
 
@@ -161,7 +160,7 @@ class KnightStateKO_TeamA(State):
         if self.knight.current_respawn_time <= 0:
             self.knight.current_respawn_time = self.knight.respawn_time
             self.knight.ko = False
-            self.knight.path_graph = self.knight.world.paths[randint(0, len(self.knight.world.paths)-1)]
+            self.knight.path_graph = self.knight.world.paths[0]
             return "seeking"
             
         return None
