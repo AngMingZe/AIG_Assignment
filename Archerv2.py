@@ -6,7 +6,7 @@ from Graph import *
 from Character import *
 from State import *
 
-class Archer_TeamA(Character):
+class Archer_EZ(Character):
 
     def __init__(self, world, image, projectile_image, base, position):
 
@@ -24,10 +24,10 @@ class Archer_TeamA(Character):
         self.projectile_range = 100
         self.projectile_speed = 100
 
-        seeking_state = ArcherStateSeeking_TeamA(self)
-        attacking_state = ArcherStateAttacking_TeamA(self)
-        dodging_state = ArcherStateDodging_TeamA(self)
-        ko_state = ArcherStateKO_TeamA(self)
+        seeking_state = ArcherStateSeeking_EZ(self)
+        attacking_state = ArcherStateAttacking_EZ(self)
+        dodging_state = ArcherStateDodging_EZ(self)
+        ko_state = ArcherStateKO_EZ(self)
 
         self.brain.add_state(seeking_state)
         self.brain.add_state(attacking_state)
@@ -47,21 +47,23 @@ class Archer_TeamA(Character):
         
         level_up_stats = ["hp", "speed", "ranged damage", "ranged cooldown", "projectile range"]
         if self.can_level_up():
-            choice = 1
+            choice = 2
             self.level_up(level_up_stats[choice])   
 
 
-class ArcherStateSeeking_TeamA(State):
+class ArcherStateSeeking_EZ(State):
 
     def __init__(self, archer):
 
         State.__init__(self, "seeking")
         self.archer = archer
 
-        self.archer.path_graph = self.archer.world.paths[2]
+        self.archer.path_graph = self.archer.world.paths[1]
 
 
     def do_actions(self):
+
+        self.archer.heal()
 
         self.archer.velocity = self.archer.move_target.position - self.archer.position
 
@@ -109,7 +111,7 @@ class ArcherStateSeeking_TeamA(State):
             self.archer.move_target.position = self.archer.path_graph.nodes[self.archer.base.target_node_index].position
 
 
-class ArcherStateAttacking_TeamA(State):
+class ArcherStateAttacking_EZ(State):
 
     def __init__(self, archer):
 
@@ -153,7 +155,7 @@ class ArcherStateAttacking_TeamA(State):
         return None
 
 
-class ArcherStateKO_TeamA(State):
+class ArcherStateKO_EZ(State):
 
     def __init__(self, archer):
 
@@ -171,7 +173,7 @@ class ArcherStateKO_TeamA(State):
         if self.archer.current_respawn_time <= 0:
             self.archer.current_respawn_time = self.archer.respawn_time
             self.archer.ko = False
-            self.archer.path_graph = self.archer.world.paths[2]
+            self.archer.path_graph = self.archer.world.paths[1]
             return "seeking"
             
         return None
@@ -186,7 +188,7 @@ class ArcherStateKO_TeamA(State):
         return None
 
 
-class ArcherStateDodging_TeamA(State):
+class ArcherStateDodging_EZ(State):
 
     def __init__(self, archer):
 
