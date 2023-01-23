@@ -26,16 +26,18 @@ class Wizard_EZ(Character):
         self.projectile_speed = 100
 
         #seeking_state = WizardStateSeeking_EZ(self)
-        bingchilling_state = WizardStatebingchilling_EZ(self)
+        waiting_state = WizardStateWaiting_EZ(self)
         attacking_state = WizardStateAttacking_EZ(self)
         ko_state = WizardStateKO_EZ(self)
+        # healing_state = WizardStateHealing_EZ(self)
 
         #self.brain.add_state(seeking_state)
-        self.brain.add_state(bingchilling_state)
+        self.brain.add_state(waiting_state)
         self.brain.add_state(attacking_state)
         self.brain.add_state(ko_state)
+        # self.brain.add_state(healing_state)
 
-        self.brain.set_state("bingchilling")
+        self.brain.set_state("waiting")
 
     def render(self, surface):
 
@@ -49,77 +51,31 @@ class Wizard_EZ(Character):
         level_up_stats = ["hp", "speed", "ranged damage", "ranged cooldown", "projectile range", "healing", "healing cooldown"]
         if self.can_level_up():
             choice = 3
-            self.level_up(level_up_stats[choice])      
+            self.level_up(level_up_stats[choice])
+
+        #Healing implementation
+        # nearest_opponent = self.wizard.world.get_nearest_opponent(self.wizard)
+        # if nearest_opponent is not None:
+        #     opponent_distance = (self.wizard.position - nearest_opponent.position).length()
+        #     if self.current_hp < 75 and opponent_distance <= self.wizard.min_target_distance:
+        #         self.heal() 
 
 
-# class WizardStateSeeking_EZ(State):
-
-#     def __init__(self, wizard):
-
-#         State.__init__(self, "seeking")
-#         self.wizard = wizard
-
-#         self.wizard.path_graph = self.wizard.world.paths[1]
-        
-
-#     def do_actions(self):
-
-#         self.wizard.velocity = self.wizard.move_target.position - self.wizard.position
-#         if self.wizard.velocity.length() > 0:
-#             self.wizard.velocity.normalize_ip();
-#             self.wizard.velocity *= self.wizard.maxSpeed
-
-#     def check_conditions(self):
-
-#         # check if opponent is in range
-#         nearest_opponent = self.wizard.world.get_nearest_opponent(self.wizard)
-#         if nearest_opponent is not None:
-#             opponent_distance = (self.wizard.position - nearest_opponent.position).length()
-#             if opponent_distance <= self.wizard.min_target_distance:
-#                     self.wizard.target = nearest_opponent
-#                     return "attacking"
-        
-#         if (self.wizard.position - self.wizard.move_target.position).length() < 8:
-
-#             # continue on path
-#             if self.current_connection < self.path_length:
-#                 self.wizard.move_target.position = self.path[self.current_connection].toNode.position
-#                 self.current_connection += 1
-            
-#         return None
-
-#     def entry_actions(self):
-
-#         nearest_node = self.wizard.path_graph.get_nearest_node(self.wizard.position)
-
-#         self.path = pathFindAStar(self.wizard.path_graph, \
-#                                   nearest_node, \
-#                                   self.wizard.path_graph.nodes[self.wizard.base.target_node_index])
-
-        
-#         self.path_length = len(self.path)
-
-#         if (self.path_length > 0):
-#             self.current_connection = 0
-#             self.wizard.move_target.position = self.path[0].fromNode.position
-
-#         else:
-#             self.wizard.move_target.position = self.wizard.path_graph.nodes[self.wizard.base.target_node_index].position
-
-class WizardStatebingchilling_EZ(State):
+class WizardStateWaiting_EZ(State):
 
     def __init__(self, wizard):
 
-        State.__init__(self, "bingchilling")
+        State.__init__(self, "waiting")
         self.wizard = wizard
     
     def do_actions(self):
 
-        position = (280,120)
+        self.wizard.heal()
+        position = (275,143)
         distance = (self.wizard.position - position).length()
 
         # opponent within range
-        if distance <= 15:
+        if distance <= 3:
             self.wizard.velocity = Vector2(0, 0)
 
         else:
@@ -137,6 +93,7 @@ class WizardStatebingchilling_EZ(State):
             if opponent_distance <= self.wizard.min_target_distance:
                     self.wizard.target = nearest_opponent
                     return "attacking"
+
     
     def entry_actions(self):
 
@@ -171,7 +128,7 @@ class WizardStateAttacking_EZ(State):
         # target is gone
         if self.wizard.world.get(self.wizard.target.id) is None or self.wizard.target.ko:
             self.wizard.target = None
-            return "bingchilling"
+            return "waiting"
             
         return None
 
@@ -198,7 +155,7 @@ class WizardStateKO_EZ(State):
         if self.wizard.current_respawn_time <= 0:
             self.wizard.current_respawn_time = self.wizard.respawn_time
             self.wizard.ko = False
-            return "bingchilling"
+            return "waiting"
             
         return None
 

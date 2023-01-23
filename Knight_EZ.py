@@ -62,7 +62,7 @@ class KnightStateSeeking_EZ(State):
 
         State.__init__(self, "seeking")
         self.knight = knight
-        self.knight.path_graph = self.knight.world.paths[1] #Knight always goes top, 0 is top lane
+        self.knight.path_graph = self.knight.world.paths[1] #Knight always goes bot, 1 is bot lane
 
 
     def do_actions(self):
@@ -71,6 +71,8 @@ class KnightStateSeeking_EZ(State):
         if self.knight.velocity.length() > 0:
             self.knight.velocity.normalize_ip();
             self.knight.velocity *= self.knight.maxSpeed
+        
+        self.knight.heal()
 
 
     def check_conditions(self):
@@ -127,7 +129,8 @@ class KnightStateAttacking_EZ(State):
         # target is gone
         if self.knight.world.get(self.knight.target.id) is None or self.knight.target.ko:
             self.knight.target = None
-            return "seeking"    
+            return "seeking"
+         
         return None
 
     def entry_actions(self):
