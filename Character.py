@@ -181,6 +181,10 @@ class Character(GameEntity):
             state_name = font.render(self.brain.active_state.name, True, (255, 255, 255))
             surface.blit(state_name, self.position)
 
+            font = pygame.font.SysFont("arial", 12, True)
+            state_name = font.render(self.brain.active_state.name, True, (255, 255, 255))
+            surface.blit(state_name, self.position)
+
             if self.target:
                 pygame.draw.line(surface, (0, 255, 0), self.position, self.target.position)
 

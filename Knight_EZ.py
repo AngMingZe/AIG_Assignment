@@ -18,21 +18,22 @@ class Knight_EZ(Character):
         self.position = position
         self.move_target = GameEntity(world, "knight_move_target", None)
         self.target = None
+        self.targetPos = (230,100)
 
         self.maxSpeed = 80
         self.min_target_distance = 100
         self.melee_damage = 20
         self.melee_cooldown = 2.
 
-        self.level = 1
-
         seeking_state = KnightStateSeeking_EZ(self)
         attacking_state = KnightStateAttacking_EZ(self)
         ko_state = KnightStateKO_EZ(self)
+        roaming_state = KnightStateRoaming_EZ(self)
 
         self.brain.add_state(seeking_state)
         self.brain.add_state(attacking_state)
         self.brain.add_state(ko_state)
+        self.brain.add_state(roaming_state)
 
         self.brain.set_state("seeking")
         
@@ -44,16 +45,14 @@ class Knight_EZ(Character):
     def process(self, time_passed):
         Character.process(self, time_passed)
         level_up_stats = ["hp", "speed", "melee damage", "melee cooldown","healing cooldown","healing"]
-        #If below lvl 3, buff health, after that buff healing
+
         if self.can_level_up():
-            if(self.level <= 3):
-                self.level_up(level_up_stats[0]) #HP
-            else:
-                self.level_up(level_up_stats[5]) #Healing amt
+            choice = 2
+            self.level_up(level_up_stats[choice]) 
         
         #Healing implementation
-        if(self.current_hp < 100):
-            self.heal()
+        # if(self.current_hp < 100):
+        #     self.heal()
 
 
 class KnightStateSeeking_EZ(State):
@@ -125,11 +124,25 @@ class KnightStateAttacking_EZ(State):
                 self.knight.velocity.normalize_ip();
                 self.knight.velocity *= self.knight.maxSpeed
 
+        wizard = self.knight.world.get_entity("wizard")
+        distance = (self.knight.position - wizard.position).length()
+        if distance < self.knight.min_target_distance:
+            self.knight.target = wizard
+
     def check_conditions(self):
         # target is gone
         if self.knight.world.get(self.knight.target.id) is None or self.knight.target.ko:
             self.knight.target = None
-            return "seeking"
+            towerCount = 0
+            for entity in self.knight.world.entities.values():
+                if entity.name == "tower" and entity.team_id != self.knight.team_id and entity.team_id != 2:
+                    towerCount += 1
+            if (towerCount == 2):
+                self.knight.path_graph = self.knight.world.paths[1]
+                return "seeking"
+            else:
+                self.targetPos = (147, 147)
+                return "roaming"
          
         return None
 
@@ -146,14 +159,19 @@ class KnightStateKO_EZ(State):
 
     def check_conditions(self):
 
-        # respawned
         if self.knight.current_respawn_time <= 0:
             self.knight.current_respawn_time = self.knight.respawn_time
             self.knight.ko = False
-            self.knight.path_graph = self.knight.world.paths[1]
-            return "seeking"
-            
-        return None
+            towerCount = 0
+            for entity in self.knight.world.entities.values():
+                if entity.name == "tower" and entity.team_id != self.knight.team_id and entity.team_id != 2:
+                    towerCount += 1
+            if (towerCount == 2):
+                self.knight.path_graph = self.knight.world.paths[1]
+                return "seeking"
+            else:
+                self.targetPos = (230, 100)
+                return "roaming"
 
     def entry_actions(self):
 
@@ -163,3 +181,47 @@ class KnightStateKO_EZ(State):
         self.knight.target = None
 
         return None
+
+class KnightStateRoaming_EZ(State):
+
+    def __init__(self, knight):
+
+        State.__init__(self, "roaming")
+        self.knight = knight
+    
+    def do_actions(self):
+
+        self.knight.heal()
+        if self.knight.team_id == 0:
+            if (self.knight.position - self.knight.targetPos).length() <= 3 and self.knight.targetPos == (230,100):
+                self.knight.targetPos = (75, 200)
+            if (self.knight.position - self.knight.targetPos).length() <= 3 and self.knight.targetPos == (75, 200):
+                self.knight.targetPos = (230, 100)
+        else:
+            if (self.knight.position - self.knight.targetPos).length() <= 3 and self.knight.targetPos == (794,668):
+                self.knight.targetPos = (949, 568)
+            if (self.knight.position - self.knight.targetPos).length() <= 3 and self.knight.targetPos == (814, 568):
+                self.knight.targetPos = (794, 924)
+
+        distance = (self.knight.position - self.knight.targetPos).length()
+
+        self.knight.velocity = self.knight.targetPos - self.knight.position
+        if self.knight.velocity.length() > 0:
+            self.knight.velocity.normalize_ip();
+            self.knight.velocity *= self.knight.maxSpeed
+
+
+    def check_conditions(self):
+
+        # check if opponent is in range
+        nearest_opponent = self.knight.world.get_nearest_opponent(self.knight)
+        if nearest_opponent is not None:
+            opponent_distance = (self.knight.position - nearest_opponent.position).length()
+            if opponent_distance <= self.knight.min_target_distance:
+                    self.knight.target = nearest_opponent
+                    return "attacking"
+
+    
+    def entry_actions(self):
+
+        self.knight.target = None

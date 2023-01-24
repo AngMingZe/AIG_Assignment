@@ -18,7 +18,8 @@ class Archer_EZ(Character):
         self.position = position
         self.move_target = GameEntity(world, "archer_move_target", None)
         self.target = None
-        self.targetPos = (230,100)
+        self.bounce=0
+        self.targetPos = Vector2(230,100)
 
         self.maxSpeed = 50
         self.min_target_distance = 100
@@ -27,15 +28,15 @@ class Archer_EZ(Character):
 
         seeking_state = ArcherStateSeeking_EZ(self)
         attacking_state = ArcherStateAttacking_EZ(self)
-        ko_state = ArcherStateKO_EZ(self)
         dodging_state = ArcherStateDodging_EZ(self)
+        ko_state = ArcherStateKO_EZ(self)
         roaming_state = ArcherStateRoaming_EZ(self)
 
         self.brain.add_state(seeking_state)
         self.brain.add_state(attacking_state)
         self.brain.add_state(ko_state)
-        self.brain.add_state(roaming_state)
         self.brain.add_state(dodging_state)
+        self.brain.add_state(roaming_state)
 
         self.brain.set_state("seeking")
 
@@ -69,6 +70,7 @@ class ArcherStateSeeking_EZ(State):
         self.archer.heal()
 
         self.archer.velocity = self.archer.move_target.position - self.archer.position
+
         if self.archer.velocity.length() > 0:
             self.archer.velocity.normalize_ip();
             self.archer.velocity *= self.archer.maxSpeed
@@ -78,6 +80,7 @@ class ArcherStateSeeking_EZ(State):
 
         # check if opponent is in range
         nearest_opponent = self.archer.world.get_nearest_opponent(self.archer)
+
         if nearest_opponent is not None:
             opponent_distance = (self.archer.position - nearest_opponent.position).length()
             if opponent_distance <= self.archer.min_target_distance:
@@ -129,6 +132,13 @@ class ArcherStateAttacking_EZ(State):
             if self.archer.current_ranged_cooldown <= 0:
                 self.archer.ranged_attack(self.archer.target.position)
 
+
+                # print(self.archer.target.position)
+                # print(self.archer.position)
+                # print("velocity: ")
+                # print(self.archer.velocity)
+                #self.archer.velocity =  self.archer.target.position- self.archer.position
+
         else:
             self.archer.velocity = self.archer.target.position - self.archer.position
             if self.archer.velocity.length() > 0:
@@ -137,11 +147,10 @@ class ArcherStateAttacking_EZ(State):
 
 
     def check_conditions(self):
-
         if self.archer.current_ranged_cooldown > 0:
             return "dodging"
         # target is gone
-        if self.archer.world.get(self.archer.target.id) is None or self.archer.target.ko:
+        if self.archer.world.get(self.archer.target.id) is None or self.archer.target.ko or self.archer.velocity==0:
             self.archer.target = None
             return "seeking"
 
@@ -173,9 +182,13 @@ class ArcherStateKO_EZ(State):
             for entity in self.archer.world.entities.values():
                 if entity.name == "tower" and entity.team_id != self.archer.team_id and entity.team_id != 2:
                     towerCount += 1
-            if (towerCount == 2):
-                self.archer.path_graph = self.archer.world.paths[1]
-                return "seeking"
+            if (towerCount != 0):
+                if towerCount > 1:
+                    self.archer.path_graph = self.archer.world.paths[1]
+                    return "seeking"
+                else:
+                    self.archer.path_graph = self.archer.world.paths[0]
+                    return "seeking"
             else:
                 self.targetPos = (230, 100)
                 return "roaming"
@@ -191,6 +204,102 @@ class ArcherStateKO_EZ(State):
 
         return None
 
+
+class ArcherStateDodging_EZ(State):
+
+    def __init__(self, archer):
+
+        State.__init__(self, "dodging")
+        self.archer = archer
+
+    def do_actions(self):
+        nearest_projectile = None
+        for entity in self.archer.world.entities.values():
+
+            if entity.name == "projectile":
+                if entity.team_id!=self.archer.team_id:
+
+                    if nearest_projectile is None:
+                        nearest_projectile = entity
+                        distance = (self.archer.position - entity.position).length()
+                    else:
+                        if distance > (self.archer.position - entity.position).length():
+                            distance = (self.archer.position - entity.position).length()
+                            nearest_projectile = entity
+        if nearest_projectile is not None:
+
+                self.archer.velocity = - nearest_projectile.position + self.archer.position
+
+
+
+
+        for entity in self.archer.world.entities.values():
+            if entity.name == "base":
+                if entity.team_id!=self.archer.team_id:
+                    baseLocation=entity
+
+
+
+
+        nearest_opponent = self.archer.world.get_nearest_opponent(self.archer)
+        if nearest_opponent is not None:
+            opponent_distance = (self.archer.position - nearest_opponent.position).length()
+            if opponent_distance <= self.archer.min_target_distance:
+                if baseLocation is not None:
+
+                    self.archer.velocity = self.archer.position  - self.archer.target.position#-baseLocation.position+Vector2(randint(-1000,1000),randint(-1000,1000))#+Vector2(0,700)
+
+
+
+        # nearest_projectile = None
+        # for entity in self.archer.world.entities.values():
+        #     if entity.name == "projectile":
+        #         if entity.team_id!=self.archer.team_id:
+        #
+        #             if nearest_projectile is None:
+        #                 nearest_projectile = entity
+        #                 distance = (self.archer.position - entity.position).length()
+        #             else:
+        #                 if distance > (self.archer.position - entity.position).length():
+        #                     distance = (self.archer.position - entity.position).length()
+        #                     nearest_projectile = entity
+        # if nearest_projectile is not None:
+        #     try:
+        #         gradient= -1 / ((nearest_projectile.position.y-self.archer.position.y)/(nearest_projectile.position.x-self.archer.position.x))
+        #         c = self.archer.position.y - gradient * self.archer.position.x
+        #         if self.archer.position.x > nearest_projectile.position.x:
+        #             self.archer.velocity = (self.archer.position.x,
+        #                                     gradient * self.archer.position.x + c) + self.archer.position
+        #         else:
+        #             self.archer.velocity = (-self.archer.position.x,
+        #                                     -gradient * self.archer.position.x + c) + self.archer.position
+        #     except(Exception):
+        #         print()
+        #
+        #
+        #
+        #
+        #
+        #     self.archer.velocity=Vector2(nearest_projectile.position.x,nearest_projectile.position.y-self.archer.position.x-self.archer.position.x)
+        if self.archer.velocity.length() > 0:
+            self.archer.velocity.normalize_ip();
+            self.archer.velocity *= self.archer.maxSpeed
+
+    def check_conditions(self):
+        if self.archer.current_ranged_cooldown <= 0:
+            return "attacking"
+        if self.archer.world.get(self.archer.target.id) is None or self.archer.target.ko or self.archer.velocity==0:
+            self.archer.target = None
+            return "seeking"
+        # if self.archer.velocity==0:
+        #     self.archer.bounce+=1
+        #     self.archer.velocity = self.archer.position + self.archer.target.position  + Vector2(
+        #         randint(-1000, 1000), randint(-1000, 1000))  # +Vector2(0,700)
+
+    def entry_actions(self):
+
+        return None
+
 class ArcherStateRoaming_EZ(State):
 
     def __init__(self, archer):
@@ -202,7 +311,7 @@ class ArcherStateRoaming_EZ(State):
 
         self.archer.heal()
 
-        #self.archer.base.spawn_position
+        self.archer.heal()
         if self.archer.team_id == 0:
             if (self.archer.position - self.archer.targetPos).length() <= 3 and self.archer.targetPos == (230,100):
                 self.archer.targetPos = (75, 200)
@@ -236,25 +345,3 @@ class ArcherStateRoaming_EZ(State):
     def entry_actions(self):
 
         self.archer.target = None
-
-class ArcherStateDodging_EZ(State):
-
-    def __init__(self, archer):
-
-        State.__init__(self, "dodging")
-        self.archer = archer
-
-    def do_actions(self):
-
-        self.archer.velocity =+ self.archer.position  - self.archer.target.position
-    
-    def check_conditions(self):
-        if self.archer.current_ranged_cooldown <= 0:
-            return "attacking"
-        if self.archer.world.get(self.archer.target.id) is None or self.archer.target.ko or self.archer.velocity==0:
-            self.archer.target = None
-            return "seeking"
-
-    def entry_actions(self):
-
-        return None
