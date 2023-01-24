@@ -45,7 +45,7 @@ class Archer_EZ(Character):
         
         level_up_stats = ["hp", "speed", "ranged damage", "ranged cooldown", "projectile range"]
         if self.can_level_up():
-            choice = 3
+            choice = 2
             self.level_up(level_up_stats[choice])   
 
 
