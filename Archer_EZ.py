@@ -66,7 +66,8 @@ class ArcherStateSeeking_EZ(State):
 
     def do_actions(self):
 
-        self.archer.heal()
+        if self.archer.current_hp != self.archer.max_hp:
+            self.archer.heal()
 
         self.archer.velocity = self.archer.move_target.position - self.archer.position
         if self.archer.velocity.length() > 0:
@@ -143,7 +144,17 @@ class ArcherStateAttacking_EZ(State):
         # target is gone
         if self.archer.world.get(self.archer.target.id) is None or self.archer.target.ko:
             self.archer.target = None
-            return "seeking"
+            towerCount = 0
+            for entity in self.archer.world.entities.values():
+                if entity.name == "tower" and entity.team_id != self.archer.team_id and entity.team_id != 2:
+                    towerCount += 1
+            if (towerCount == 2):
+                self.archer.path_graph = self.archer.world.paths[1]
+                return "seeking"
+            else:
+                self.targetPos = (230, 100)
+                return "roaming"
+         
 
         return None
 
@@ -200,7 +211,8 @@ class ArcherStateRoaming_EZ(State):
     
     def do_actions(self):
 
-        self.archer.heal()
+        if self.archer.current_hp != self.archer.max_hp:
+            self.archer.heal()
 
         #self.archer.base.spawn_position
         if self.archer.team_id == 0:
@@ -246,7 +258,12 @@ class ArcherStateDodging_EZ(State):
 
     def do_actions(self):
 
-        self.archer.velocity =+ self.archer.position  - self.archer.target.position
+        distance = (self.archer.target.position - self.archer.position).length()
+        if distance < 75:
+            self.archer.velocity = + self.archer.position - self.archer.target.position
+        if self.archer.velocity.length() > 0:
+            self.archer.velocity.normalize_ip();
+            self.archer.velocity *= self.archer.maxSpeed
     
     def check_conditions(self):
         if self.archer.current_ranged_cooldown <= 0:

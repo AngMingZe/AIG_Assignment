@@ -60,7 +60,8 @@ class WizardStateRoaming_EZ(State):
     
     def do_actions(self):
 
-        self.wizard.heal()
+        if self.wizard.current_hp != self.wizard.max_hp:
+            self.wizard.heal()
 
         towerCount = 0
         for entity in self.wizard.world.entities.values():

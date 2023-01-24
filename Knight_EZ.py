@@ -70,8 +70,9 @@ class KnightStateSeeking_EZ(State):
         if self.knight.velocity.length() > 0:
             self.knight.velocity.normalize_ip();
             self.knight.velocity *= self.knight.maxSpeed
-        
-        self.knight.heal()
+
+        if self.knight.current_hp != self.knight.max_hp:
+            self.knight.heal()
 
 
     def check_conditions(self):
@@ -141,7 +142,7 @@ class KnightStateAttacking_EZ(State):
                 self.knight.path_graph = self.knight.world.paths[1]
                 return "seeking"
             else:
-                self.targetPos = (147, 147)
+                self.targetPos = (230, 100)
                 return "roaming"
          
         return None
@@ -190,8 +191,8 @@ class KnightStateRoaming_EZ(State):
         self.knight = knight
     
     def do_actions(self):
-
-        self.knight.heal()
+        if self.knight.current_hp != self.knight.max_hp:
+            self.knight.heal()
         if self.knight.team_id == 0:
             if (self.knight.position - self.knight.targetPos).length() <= 3 and self.knight.targetPos == (230,100):
                 self.knight.targetPos = (75, 200)
